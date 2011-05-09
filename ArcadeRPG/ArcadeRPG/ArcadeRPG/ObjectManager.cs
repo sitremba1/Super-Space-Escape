@@ -103,6 +103,11 @@ namespace ArcadeRPG
                                     height = 36;
                                     type = enemyType.BERSERKER;
                                     break;
+                                case 77: //Trooper
+                                    width = 32;
+                                    height = 36;
+                                    type = enemyType.TROOPER;
+                                    break;
                                 default:
                                     continue;
 
@@ -122,6 +127,9 @@ namespace ArcadeRPG
             game_state.local_player.getInventory().Clear();
             game_state.local_player.setWeapon(0);
             game_state.monster_engine.Clear();
+            game_state.local_player.setWeapon(weaponType.NONE);
+            game_state.local_player.getInventory().Clear();
+            game_state.local_player.setHealth(game_state.local_player.getMaxHealth());
         }
 
         //Item lookup - coords

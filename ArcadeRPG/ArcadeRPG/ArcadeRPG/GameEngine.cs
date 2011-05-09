@@ -48,11 +48,13 @@ namespace ArcadeRPG
         //************************MENU INSTANCE*****************//
         Backpack backpackmenu;
         TimeExpired timex; // for "timeout" instance
+        GameOver gameOver;
         //*****************************************************//
 
         //******************GRAPHIC SPRITES*****************//
         Texture2D backpack; // backpack graphic user can tap on for item inventory
-        Texture2D healthbar; // displays user character's health
+        Texture2D healthbar_empty; // displays user character's health
+        Texture2D healthbar_full;
         Texture2D uparrow;
         Texture2D downarrow;
         Texture2D leftarrow;
@@ -63,7 +65,7 @@ namespace ArcadeRPG
 
 
         //*********************POSITIONS***********************//
-        Vector2 backpackpos = new Vector2(700, 335); // position for backpack sprite
+        Vector2 backpackpos = new Vector2(700, 330); // position for backpack sprite
         //Vector2 gunbuttonpos = new Vector2(630, 425); // position for attack button
         Vector2 healthpos = new Vector2(280, 445); // position for health bar
 
@@ -72,25 +74,31 @@ namespace ArcadeRPG
         Vector2 timeLeftPos = new Vector2(0, 0); // "Time Remaining" position
         Vector2 timePos = new Vector2(75, 0); // displaying actual time left
 
+        Vector2 livesStringPos = new Vector2(0, 40);
         Vector2 levelstringpos = new Vector2(700, 0); // "Level: " position
         Vector2 levelnumpos = new Vector2(755, 0); // level number position
+       
 
         Color trans = new Color(255, 255, 255, 50);
+        Color lucen = new Color(255, 255, 255, 120);
         Vector2 uparrowpos = new Vector2(50, 345);
         Vector2 downarrowpos = new Vector2(50, 425);
         Vector2 leftarrowpos = new Vector2(15, 385);
         Vector2 rightarrowpos = new Vector2(85, 385); //positions for each arrow
         Vector2 fire_button_pos = new Vector2(700, 385);
 
-        Rectangle health_bar_rec;
+        Rectangle health_bar_rec, health_bar_empty_rec;
         static int health_bar_width = 200;
         //****************************************************//
 
         //**************DISPLAY STRINGS******************//
-        public const string scoreString = "SCORE: "; // display string
+        public const string scoreString = "Score: "; // display string
         public int currScore = 0; // actual score, again can be modified like the levelnum var. not "const"
-        public const string timeLeft = "TIME: ";
-        public const string levelstring = "LEVEL: ";
+        public const string timeLeft = "Time: ";
+
+        public const string levelstring = "Level: ";
+        public const string livesString = "Lives Remaining: ";
+
         public int levelnum = 0; // can be modified for when a user advances through levels, not a "const"
         //************************************************//
 
@@ -103,20 +111,23 @@ namespace ArcadeRPG
 
 
         //***************************MISC*********************//
-        public TimeSpan currTime = TimeSpan.FromSeconds(600.0); // grant the player a certain time per round
+        public const int LEVEL_TIME = 120;
+        public TimeSpan currTime = TimeSpan.FromSeconds(LEVEL_TIME); // grant the player a certain time per round
         // currTime will be 90 and count down each second, checking against 0 each second,  for each level
         public int hurt_time = 3000;
-
-        Boolean timeOut; // alerts program when timer for roundtime has expired
+        public int livesRemaining = 5;
         bool button_release = false;
+        public bool gameEnded = false;
         Vector2 imageOffset = new Vector2(0, 0); //origin
         //*****************************************************//
 
 
-        public GameEngine()
+        public GameEngine(TimeExpired t, GameOver g)
         {
 
             backpackmenu = new Backpack();
+            timex = t;
+            gameOver = g;
 
             character_sprite = new Sprite[(int)weaponType.GRENADE];
             character_sprite[(int)weaponType.NONE] = new Sprite();
@@ -190,6 +201,7 @@ namespace ArcadeRPG
 
             monster_texture[(int)enemyType.BEETLE] = Content.Load<Texture2D>("beetles");
             monster_texture[(int)enemyType.BERSERKER] = Content.Load<Texture2D>("berserker");
+            monster_texture[(int)enemyType.TROOPER] = Content.Load<Texture2D>("trooper");
             //monster_sprites[(int)enemyType.GRUNT].Load(monster_texture[(int)enemyType.GRUNT], 32, 48);
             //monster_sprites[(int)enemyType.GRUNT].StartAnimating((int)PlayerDir.UP * 3, ((int)PlayerDir.UP * 3) + 2);
             LoadLevel(0);
@@ -232,19 +244,23 @@ namespace ArcadeRPG
 
             //********************************LOADING GRAPHIC SPRITES********************************//
             backpack = Content.Load<Texture2D>("backpack"); // loading backpack
-            healthbar = Content.Load<Texture2D>("healthbar"); // load health bar
+            healthbar_empty = Content.Load<Texture2D>("healthbar"); // load health bar
+            healthbar_full = Content.Load<Texture2D>("healthbar_full"); // load health bar
             health_bar_rec = new Rectangle((int)healthpos.X, (int)healthpos.Y, health_bar_width, 30);
+            health_bar_empty_rec = new Rectangle((int)healthpos.X, (int)healthpos.Y, health_bar_width, 30);
             //**************************************************************************************//
 
 
             //********************MISCELLANEOUS*****************************************************//
             displayFont = Content.Load<SpriteFont>("StatsFont"); //load a font from a formatted file
+            //displayFont = Content.Load<SpriteFont>("Courier New");
             itemfont = Content.Load<SpriteFont>("ItemFont"); // ^^
             expiredfont = Content.Load<SpriteFont>("TimeExpired"); // ^^
             //***************************************************************************************//
 
             backpackmenu.loadContent(Content);
-
+            gameOver.loadContent(Content);
+            timex.loadContent(Content);
         }
 
         /// <summary>
@@ -254,12 +270,16 @@ namespace ArcadeRPG
         public void UnloadContent()
         {
         }
+
         public void LoadLevel(int level_num)
         {
             game_state.obj_mang.Clear();
+<<<<<<< HEAD
             //level_num++;
+=======
+            resetTimer();
+>>>>>>> upstream/master
             game_state.tile_engine.loadLevel(level_num);//needs to be changed to level_0
-
             game_state.obj_mang.load(game_state.tile_engine.getCurrentMap().getLayer(LayerType.OBJECTS));
             //game_state.monster_engine.AddMonster(new Enemy(500, 240, 48, 54, enemyType.GRUNT));
             //game_state.monster_engine.AddMonster(new Enemy(300, 400, 48, 54, enemyType.GRUNT));
@@ -280,6 +300,17 @@ namespace ArcadeRPG
             game_state.obj_mang = new ObjectManager(game_state);
             */
         }
+
+        public void resetTimer()
+        {
+            currTime = TimeSpan.FromSeconds(LEVEL_TIME);
+        }
+
+        public bool hasTimeLeft()
+        {
+            return currTime.TotalSeconds > 0;
+        }
+
         public bool testAtExit(int x, int y)
         {
             int tileT=game_state.tile_engine.getMap(game_state.tile_engine.getCurrentLevel()).getLayer(0).getTile(x/32, y/32).getTexture();
@@ -295,17 +326,24 @@ namespace ArcadeRPG
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         public void Update(GameTime gameTime)
         {
+            if (game_state.local_player.getHealth() <= 0)
+            {
+                die();
+                return;
+            }
 
             PlayerDir pot_dir = game_state.local_player.getDirection();
             int pot_x = game_state.local_player.getX();
             int pot_y = game_state.local_player.getY();
+
+            double new_width = ((double)health_bar_width) * (double)((double)game_state.local_player.getHealth() / (double)game_state.local_player.getMaxHealth());
+            health_bar_rec.Width = (int)new_width;
 
             //Put a nicer function here
             TouchCollection touchCollection = TouchPanel.GetState();
             foreach (TouchLocation tl in touchCollection)
             // for each place the screen has been touched at the point of "getState"
             {
-
 
                 //if the screen is pressed on an arrow, move sprite accordingly
                 if (tl.State == TouchLocationState.Pressed || tl.State == TouchLocationState.Moved)
@@ -340,7 +378,6 @@ namespace ArcadeRPG
                         pot_x += game_state.local_player.getSpeed();
                         pot_dir = PlayerDir.RIGHT;
                         //local_player.setX(local_player.getX() + 3);
-
                     }
 
 
@@ -416,20 +453,20 @@ namespace ArcadeRPG
                                 switch (game_state.local_player.getDirection())
                                 {
                                     case PlayerDir.DOWN:
-                                        bullet_x = game_state.local_player.getX() + game_state.local_player.getWidth() / 2;
+                                        bullet_x = game_state.local_player.getX() - 2;
                                         bullet_y = game_state.local_player.getY() + game_state.local_player.getHeight();
                                         break;
                                     case PlayerDir.UP:
-                                        bullet_x = game_state.local_player.getX() + game_state.local_player.getWidth() / 2;
+                                        bullet_x = game_state.local_player.getX() - 2;
                                         bullet_y = game_state.local_player.getY() - game_state.local_player.getHeight();
                                         break;
                                     case PlayerDir.LEFT:
-                                        bullet_x = game_state.local_player.getX() - game_state.local_player.getWidth();
-                                        bullet_y = game_state.local_player.getY() + game_state.local_player.getHeight() / 2;
+                                        bullet_x = game_state.local_player.getX() - (game_state.local_player.getWidth());
+                                        bullet_y = game_state.local_player.getY(); //+ game_state.local_player.getHeight();
                                         break;
                                     case PlayerDir.RIGHT:
                                         bullet_x = game_state.local_player.getX() + game_state.local_player.getWidth();
-                                        bullet_y = game_state.local_player.getY() + game_state.local_player.getHeight() / 2;
+                                        bullet_y = game_state.local_player.getY(); //+ game_state.local_player.getHeight();
                                         break;
                                 }
 
@@ -550,8 +587,7 @@ namespace ArcadeRPG
 
                         game_state.local_player.setHealth(game_state.local_player.getHealth() + game_state.local_player.getDefenseBonus() - damage);
                         game_state.local_player.hurt = true;
-                        double new_width = ((double)health_bar_width) * (double)((double)game_state.local_player.getHealth() / (double)game_state.local_player.getMaxHealth());
-                        health_bar_rec.Width = (int)new_width;
+                   
                         //Get hurt by a little
                         hurt_time = 500;
                     }
@@ -570,9 +606,9 @@ namespace ArcadeRPG
             currTime -= gameTime.ElapsedGameTime; // start timer on actual game
 
 
-            if ((currTime.Minutes <= 0) && (currTime.Seconds <= 0) && (currTime.Milliseconds <= 0))
+            if (currTime.TotalSeconds <= 0)
             {
-                timeOut = true; // if round time has run out, display the time expired screen (setting this bool to true will flag the menu later)
+                return;
             }
             game_state.monster_engine.Update(gameTime.ElapsedGameTime.Milliseconds);
             game_state.bullet_engine.Update();
@@ -588,13 +624,33 @@ namespace ArcadeRPG
 
         }
 
+        public void die()
+        {
+            livesRemaining--;
+            if (!hasMoreLives())
+            {
+                if (backpackmenu.isShowing())
+                    backpackmenu.Hide();
+                if (timex.isShowing())
+                    timex.Hide();
+                gameEnded = true;
+                return;
+            }
+
+            LoadLevel(game_state.tile_engine.getCurrentLevel());
+        }
+
+        public Boolean hasMoreLives()
+        {
+            return livesRemaining > 0;
+        }
+
         /// <summary>
         /// This is called when the game should draw itself.
         /// </summary>
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         public void Draw(GameTime gameTime, SpriteBatch spriteBatch)
         {
-
             //spriteBatch.Begin();
             game_state.tile_engine.getCurrentMap().drawBackground(spriteBatch, game_state.local_player.getX(), game_state.local_player.getY());
             game_state.tile_engine.getCurrentMap().drawObjects(spriteBatch, game_state.local_player.getX(), game_state.local_player.getY());
@@ -719,42 +775,54 @@ namespace ArcadeRPG
                 spriteBatch.Draw(leftarrow, leftarrowpos, null, trans, 0, imageOffset, 3.0f, SpriteEffects.None, 0);
                 spriteBatch.Draw(rightarrow, rightarrowpos, null, trans, 0, imageOffset, 3.0f, SpriteEffects.None, 0);
                 spriteBatch.Draw(fire_button, fire_button_pos, null, trans, 0, imageOffset, 3.0f, SpriteEffects.None, 0);
+                spriteBatch.DrawString(displayFont, "FIRE!", new Vector2(fire_button_pos.X + 38, fire_button_pos.Y + 45), Color.Black);
                 //draw the arrow graphics to the screen with given position, 3x as big as original size, no effects
                 //************************************************************//
 
 
                 //***********************DRAWING GRAPHIC SPRITES***********************//
-                spriteBatch.Draw(backpack, backpackpos, null, trans, 0, imageOffset, 0.4f, SpriteEffects.None, 0); //draw the backpack "button"
-                
-                spriteBatch.Draw(healthbar, health_bar_rec, null, trans);  //draw health bar
+                spriteBatch.Draw(backpack, backpackpos, null, trans, 0, imageOffset, new Vector2(0.4f,1.0f), SpriteEffects.None, 0); //draw the backpack "button"    
+                spriteBatch.DrawString(displayFont, "Inventory", new Vector2(backpackpos.X + 20, backpackpos.Y + 12), Color.Black);
+                spriteBatch.Draw(healthbar_empty, health_bar_empty_rec, null, trans);  //draw health bar
+                spriteBatch.Draw(healthbar_full, health_bar_rec, null, trans);  //draw health bar
+                string curHealth = "" + game_state.local_player.getHealth();
+                string maxHealth = "" + game_state.local_player.getMaxHealth();
+                spriteBatch.DrawString(displayFont, "Health: " + curHealth + "/" + maxHealth, new Vector2(health_bar_rec.X + 42, health_bar_rec.Y + 5), Color.Black);
                 //********************************************************************//
 
 
                 //***************************DRAWING STRINGS***********************************//
-                spriteBatch.DrawString(displayFont, scoreString, scoreStringPos, Color.Black); // draw "score: "
-                spriteBatch.DrawString(displayFont, currScore.ToString(), currScorePos, Color.Black); // draw actual score
+                //spriteBatch.DrawString(displayFont, scoreString, scoreStringPos, Color.Cyan); // draw "score: "
+                //spriteBatch.DrawString(displayFont, currScore.ToString(), currScorePos, Color.Cyan); // draw actual score
 
-                spriteBatch.DrawString(displayFont, levelstring, levelstringpos, Color.Black); // draw "level: "
-                spriteBatch.DrawString(displayFont, game_state.tile_engine.getCurrentLevelName(), levelnumpos, Color.Black); // draw level number
+
+                spriteBatch.DrawString(displayFont, levelstring, scoreStringPos, Color.Cyan); // draw "level: "
+                spriteBatch.DrawString(displayFont, game_state.tile_engine.getCurrentLevelName(), currScorePos, Color.Cyan); // draw level number
+
+                spriteBatch.DrawString(displayFont, livesString+livesRemaining.ToString(), livesStringPos, Color.Cyan); // draw lives remaining
+
                 //****************************************************************************//
 
 
                 //check to see if the score needs to continue to be drawn (if time hasn't run out)
                 //if it has, undraw it and display time expired string and menu
-                if (timeOut)
+                if (!hasTimeLeft())
                 {
-                    timex.Show(spriteBatch, expiredfont); // brings up time expired screen
+                    die();
+                    if(hasMoreLives())
+                        timex.Show(spriteBatch); // brings up time expired screen
                 }
                 else
                 {
-                    spriteBatch.DrawString(displayFont, timeLeft, timeLeftPos, Color.Black);
-                    spriteBatch.DrawString(displayFont, (currTime.Minutes*60+currTime.Seconds).ToString(), timePos, Color.Black);
+                    spriteBatch.DrawString(displayFont, timeLeft, timeLeftPos, Color.Cyan);
+                    spriteBatch.DrawString(displayFont, ((int)(currTime.TotalSeconds)).ToString(), timePos, Color.Cyan);
+
                 }
 
             } // end backpack button NOT pressed if
             else // backpack button has been pressed
             {
-                if (!timeOut) // if time hasnt run out during the period where the inventory is brought up by the user, show the inventory
+                if (hasTimeLeft()) // if time hasnt run out during the period where the inventory is brought up by the user, show the inventory
                 {
                     backpackmenu.Show(spriteBatch); // draw backpack menu
                     drawItems(spriteBatch, itemfont); // draw items according to layout in itemfont
@@ -762,7 +830,7 @@ namespace ArcadeRPG
                 else // time has run out while the inventory is up, hide inventory and bring up time expired menu
                 {
                     backpackmenu.Hide();
-                    timex.Show(spriteBatch, expiredfont);
+                    timex.Show(spriteBatch);
                 }
             }
 
@@ -810,8 +878,6 @@ namespace ArcadeRPG
             } // end else
 
         }//end drawitems function
-
-
 
     }
 }

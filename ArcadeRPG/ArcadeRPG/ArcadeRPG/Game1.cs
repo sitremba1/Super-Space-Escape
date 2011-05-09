@@ -19,13 +19,9 @@ namespace ArcadeRPG
     /// </summary>
     public class Game1 : Microsoft.Xna.Framework.Game
     {
+        private const bool DEV_MODE = true;
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
-
-        SpriteFont displayFont; // in separate file (fonts subfolder). arbitrary
-        SpriteFont itemfont; // ^^
-        SpriteFont expiredfont; // ^^
-
         Vector2 imageOffset = new Vector2(0, 0); //don't offset anything
         Color backColor = Color.White; // arbitrary color for background
 
@@ -36,9 +32,6 @@ namespace ArcadeRPG
         Instructions2 instruct2;
         Instructions instruct; // instantiate objects
         //*************************************************************//
-
-
-        TouchCollection tcinstruct; // to be used in the instruction screens at the beginning
 
         GameEngine game_engine;
 
@@ -59,7 +52,7 @@ namespace ArcadeRPG
             // use the whole screen
             graphics.IsFullScreen = true;
 
-            game_engine = new GameEngine();
+            game_engine = new GameEngine(timex, gameover);
 
         }
 
@@ -117,34 +110,41 @@ namespace ArcadeRPG
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
                 this.Exit();
 
+            if (DEV_MODE)
+            {
+                if (intro.isShowing()) intro.Hide();
+                if (instruct.isShowing()) instruct.Hide();
+                if (instruct2.isShowing()) instruct2.Hide();
+            }
+
             if (intro.isShowing()) // if the introduction screen is showing, continue showing until introTime runs out (5 seconds)
             {
                 intro.update(gameTime);
             }
             else if (instruct.isShowing()) // if instructions are showing, continue showing for 5 seconds and let it advance
             {
-                instruct.update(gameTime, tcinstruct);
+                instruct.update(gameTime);
             }
             else if (instruct2.isShowing()) // if second instructions are showing, continue showing
             {
-                instruct2.update(gameTime, tcinstruct);
+                instruct2.update(gameTime);
             }
             else if (timex.isShowing()) // user ran out of time, time expired screen is up. will wait here for user to choose to play again or not
             {
-
+                timex.update(gameTime);
                 if (timex.play_again) // user wants to play again
                 {
                     timex.Hide(); // so hide game screen and
+                    timex.reset();
                     game_engine.Update(gameTime); // go to game environment
                 }
-                else if (!timex.play_again) // user wants to quit or time ran out so
+                else if (!timex.isRunning()) // user did not select play again before time ran out
                 {
                     timex.Hide();
                     spriteBatch.Begin();
                     gameover.Show(spriteBatch); // exit game
                     spriteBatch.End();
                 }
-
             }
             else if (gameover.isShowing()) // game over screen is showing
             {
@@ -157,11 +157,19 @@ namespace ArcadeRPG
             else
             {
                 game_engine.Update(gameTime);
+                if (game_engine.gameEnded)
+                {
+                    spriteBatch.Begin();
+                    gameover.Show(spriteBatch);
+                    spriteBatch.End();
+                }
             }
 
 
             base.Update(gameTime);
         }
+
+       
 
         /// <summary>
         /// This is called when the game should draw itself.
@@ -191,12 +199,9 @@ namespace ArcadeRPG
             }
             else if (timex.isShowing())
             {
-
                 spriteBatch.Begin();
-                timex.Show(spriteBatch, displayFont); // show time expired screen until user makes a selection
-                timex.update(spriteBatch, expiredfont, gameTime);
+                timex.Show(spriteBatch); // show time expired screen until user makes a selection
                 spriteBatch.End();
-
             }
             else if (gameover.isShowing())
             {
@@ -210,8 +215,6 @@ namespace ArcadeRPG
                 game_engine.Draw(gameTime, spriteBatch);
                 spriteBatch.End(); // go to game environment
             }
-
-
             base.Draw(gameTime);
         } // end draw function
 
