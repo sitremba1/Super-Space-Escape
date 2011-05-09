@@ -117,8 +117,10 @@ namespace ArcadeRPG
                 }
             }
         }
-        public void Clear() //needs to be implemented to prevent leak only clears monsters atm, not collision
+        public void Clear() //needs to be implemented to prevent leak; only clears monsters atm, not collision
         {
+            game_state.local_player.getInventory().Clear();
+            game_state.local_player.setWeapon(0);
             game_state.monster_engine.Clear();
         }
 

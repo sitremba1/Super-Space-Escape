@@ -166,6 +166,10 @@
       <Importer>TextureImporter</Importer>
       <Processor>TextureProcessor</Processor>
     </Compile>
+    <None Include="levels\final.lvl">
+      <Name>final</Name>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="levels\levels.txt">
       <Name>levels</Name>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
