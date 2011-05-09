@@ -259,7 +259,7 @@ namespace ArcadeRPG
         public void LoadLevel(int level_num)
         {
             game_state.obj_mang.Clear();
-            
+            //level_num++;
             game_state.tile_engine.loadLevel(level_num);//needs to be changed to level_0
 
             game_state.obj_mang.load(game_state.tile_engine.getCurrentMap().getLayer(LayerType.OBJECTS));
