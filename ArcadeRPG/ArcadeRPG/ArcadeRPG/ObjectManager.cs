@@ -76,8 +76,8 @@ namespace ArcadeRPG
                     {
                         if (t.getTexture() == PLAYER_SPAWN)
                         {
-                            game_state.local_player.setX(w * TileEngine.TILE_SIZE);
-                            game_state.local_player.setY(h * TileEngine.TILE_SIZE);
+                            game_state.local_player.setX((w * TileEngine.TILE_SIZE)+(TileEngine.TILE_SIZE/2) - game_state.local_player.getWidth()/2);///2+game_state.local_player.getWidth());
+                            game_state.local_player.setY((h * TileEngine.TILE_SIZE) + (TileEngine.TILE_SIZE / 2) - game_state.local_player.getHeight());///2+game_state.local_player.getHeight());
                         }
                         else
                         {
@@ -179,5 +179,34 @@ namespace ArcadeRPG
 
             return null;
         }
+        public bool checkForGateAt(int x, int y, int width, int height)
+        {
+
+            int tx = (x) / game_state.tile_engine.getTileSize();
+            int ty = (y + height - 10) / game_state.tile_engine.getTileSize();
+
+            Tile t = objects_layer.getTile(tx, ty);
+            int type = t.getTexture();
+
+            if (type == -1)
+            {
+                //Bottom Right
+                tx = (x + width) / game_state.tile_engine.getTileSize();
+                ty = (y + height - 10) / game_state.tile_engine.getTileSize();
+
+
+                t = objects_layer.getTile(tx, ty);
+                type = t.getTexture();
+                if (type == -1)
+                {
+                    return false;
+                }
+            }
+            if ((type == 88) || (type == 89))
+            {
+                return true;
+            }
+            return false;
+        }//checkForGateAt
     }
 }
